@@ -20,8 +20,10 @@ const db = mysql.createConnection({
 db.connect((err) => {
   if (err) throw err;
   console.log("Database connected...");
+});
 
-  // Query untuk mendapatkan semua data mahasiswa
+// Route utama untuk menampilkan data
+app.get("/", (req, res) => {
   const sql = "SELECT * FROM mahasiswa";
   db.query(sql, (err, result) => {
     if (err) throw err;
@@ -29,35 +31,64 @@ db.connect((err) => {
     const users = JSON.parse(JSON.stringify(result));
     console.log("Hasil database ->", users);
 
-    // Route untuk menampilkan halaman utama dengan data mahasiswa
-    app.get("/", (req, res) => {
-      res.render("index", { users: users, title: "DAFTAR MURID KELAS" });
-    });
+    res.render("index", { users: users, title: "DAFTAR MURID KELAS" });
   });
 });
 
-// Route untuk menambahkan data mahasiswa baru
+// Route untuk menambahkan data
 app.post("/tambah", (req, res) => {
   const insertSql = `INSERT INTO mahasiswa (Nama, kelas) VALUES ('${req.body.Nama}', '${req.body.kelas}')`;
 
-  // Menambahkan data ke database
   db.query(insertSql, (err, result) => {
     if (err) {
       console.error("Error saat menambahkan data:", err);
       return res.send("Error saat menambahkan data.");
     }
 
-    // Setelah insert, lakukan SELECT ulang untuk mendapatkan data terbaru
-    const sql = "SELECT * FROM mahasiswa";
-    db.query(sql, (err, result) => {
-      if (err) throw err;
+    res.redirect("/");
+  });
+});
 
-      const users = JSON.parse(JSON.stringify(result));
-      console.log("Hasil database setelah update ->", users);
+// Route untuk menghapus data
+app.get("/delete/:id", (req, res) => {
+  const deleteSql = `DELETE FROM mahasiswa WHERE ID=${req.params.id}`;
 
-      // Render kembali halaman dengan data terbaru
-      res.render("index", { users: users, title: "DAFTAR MURID KELAS" });
-    });
+  db.query(deleteSql, (err, result) => {
+    if (err) {
+      console.error("Error saat menghapus data:", err);
+      return res.send("Error saat menghapus data.");
+    }
+
+    res.redirect("/");
+  });
+});
+
+// Route untuk menampilkan form edit
+app.get("/edit/:id", (req, res) => {
+  const sql = `SELECT * FROM mahasiswa WHERE ID=${req.params.id}`;
+
+  db.query(sql, (err, result) => {
+    if (err) {
+      console.error("Error saat mengambil data:", err);
+      return res.send("Error saat mengambil data.");
+    }
+
+    const user = JSON.parse(JSON.stringify(result))[0];
+    res.render("edit", { user: user, title: "Edit Data Murid" });
+  });
+});
+
+// Route untuk memperbarui data
+app.post("/update/:id", (req, res) => {
+  const updateSql = `UPDATE mahasiswa SET Nama='${req.body.Nama}', kelas='${req.body.kelas}' WHERE ID=${req.params.id}`;
+
+  db.query(updateSql, (err, result) => {
+    if (err) {
+      console.error("Error saat memperbarui data:", err);
+      return res.send("Error saat memperbarui data.");
+    }
+
+    res.redirect("/");
   });
 });
 
